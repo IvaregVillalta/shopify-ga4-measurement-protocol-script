@@ -715,8 +715,7 @@ analytics.subscribe('form_submitted', (event) => {
 
     // Build a compact summary of form fields (names and types only — no values for PII safety)
     const fieldCount = Array.isArray(formElement.elements) ? formElement.elements.length : 0;
-    const fieldSummary = Array.isArray(formElement.elements)
-      ? formElement.elements
+    const fieldSummary = Array.isArray(formElement.elements) ? formElement.elements
           .map((el) => `${el.name || el.id || 'unnamed'}:${el.type || 'unknown'}`)
           .slice(0, 20) // Cap to avoid oversized payloads
           .join(',')
