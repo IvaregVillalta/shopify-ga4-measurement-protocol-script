@@ -18,7 +18,7 @@
 // -----------------------------------------------------------------------------
 
 const GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';
-const GA4_API_SECRET = 'XXXXXXXXXXXXXXXXXXX';
+const GA4_API_SECRET = 'your_secret_here';
 const DEBUG_MODE = true; // Set to false in production
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const MP_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
