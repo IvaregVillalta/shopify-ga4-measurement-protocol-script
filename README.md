@@ -2,7 +2,7 @@
 
 A production-ready Shopify Custom Pixel that sends a complete GA4 ecommerce event set directly to Google Analytics 4 via the **Measurement Protocol**, bypassing browser ad blockers and ITP restrictions.
 
-**Version:** 1.1.0 | **Environment:** Shopify Customer Events → Custom Pixel
+**Version:** 1.2.0 | **Environment:** Shopify Customer Events → Custom Pixel
 
 ---
 
@@ -82,17 +82,17 @@ Set `DEBUG_MODE = false` in the script, save, and reconnect the pixel in Shopify
 
 | Shopify Event | GA4 Event | Key Parameters |
 |---|---|---|
-| `page_viewed` | `page_view` | `page_location`, `page_title`, `page_referrer` |
-| `product_viewed` | `view_item` | `currency`, `value`, `items` |
-| `collection_viewed` | `view_item_list` | `item_list_id`, `item_list_name`, `items` |
-| `search_submitted` | `search` | `search_term` |
+| `page_viewed` | `page_view` | `page_location`, `page_title`, `page_referrer`, `page_load_time` |
+| `product_viewed` | `view_item` | `currency`, `value`, `items`, `page_load_time` |
+| `collection_viewed` | `view_item_list` | `item_list_id`, `item_list_name`, `items`, `page_load_time` |
+| `search_submitted` | `search` | `search_term`, `page_load_time` |
 | `product_added_to_cart` | `add_to_cart` | `currency`, `value`, `items` |
 | `product_removed_from_cart` | `remove_from_cart` | `currency`, `value`, `items` |
-| `cart_viewed` | `view_cart` | `currency`, `value`, `items` |
-| `checkout_started` | `begin_checkout` | `currency`, `value`, `coupon`, `items` |
+| `cart_viewed` | `view_cart` | `currency`, `value`, `items`, `page_load_time` |
+| `checkout_started` | `begin_checkout` | `currency`, `value`, `coupon`, `items`, `page_load_time` |
 | `checkout_shipping_info_submitted` | `add_shipping_info` | `shipping_tier`, `coupon`, `items` |
 | `payment_info_submitted` | `add_payment_info` | `currency`, `value`, `coupon`, `items` |
-| `checkout_completed` | `purchase` | `transaction_id`, `value`, `tax`, `shipping`, `discount`, `coupon`, `items` |
+| `checkout_completed` | `purchase` | `transaction_id`, `value`, `tax`, `shipping`, `discount`, `coupon`, `items`, `page_load_time` |
 
 ### Custom GA4 Events
 
@@ -116,6 +116,7 @@ Set `DEBUG_MODE = false` in the script, save, and reconnect the pixel in Shopify
 
 - **Client ID** — Generated in the format `timestamp.random` and persisted in `localStorage` so the same user is recognized across sessions, matching GA4's native client ID format.
 - **Session ID** — Stored in `sessionStorage` with a 30-minute inactivity timeout, replicating GA4's session logic.
+- **Page Load Time** — Measured using `performance.now()` between pixel initialization and each page navigation event. The elapsed time (in seconds, rounded to 2 decimals) is captured as `page_load_time` and included in the first event after each navigation. Subsequent events on the same page omit this parameter. For the first page load, this includes pixel bootstrap time; for SPA navigations, it reflects perceived transition time.
 - **Deduplication** — Each event gets a deterministic ID (djb2 hash of name + timestamp + product ID). Duplicate IDs within the same page session are silently dropped.
 - **PII safety** — Form `input_changed` and `form_submitted` events send field names and types only — never field values — to avoid capturing emails, passwords, or payment data.
 - **Navigation safety** — All `fetch` calls use `keepalive: true` so events are not lost when the user navigates away before the request completes.
