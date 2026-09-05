@@ -15,6 +15,7 @@ se copia, se reemplazan los IDs de la tienda/cuenta y se instala.
 |---|---|---|
 | `head-tag.liquid` | `theme.liquid`, dentro de `<head>` | Inicializa gtag.js para **identidad** GA4 en un dataLayer aislado. No envía eventos de ecommerce. |
 | `customer-events.js` | Shopify → Settings → Customer events → Custom pixel | Envía **todos** los eventos (storefront + checkout + DOM) a GA4 vía `gtag('event', …)`. |
+| `google-ads-setup.md` | — (procedimiento) | Runbook para replicar la configuración de Google Ads vía el canal Google & YouTube. |
 
 Los dos son independientes: el pixel funciona sin el head tag, pero el head tag
 mejora la atribución de identidad en el storefront.
@@ -212,8 +213,14 @@ Este repositorio es la base de plantillas de conversión para tiendas Shopify.
 | Plataforma | Estado | Archivos |
 |---|---|---|
 | Google Analytics 4 | Implementado | `head-tag.liquid`, `customer-events.js` |
-| Google Ads | Pendiente | — |
+| Google Ads | Documentado — sin código | `google-ads-setup.md` |
 | Meta CAPI | Pendiente | — |
+
+Google Ads y Meta se gestionan desde apps de Shopify (**Google & YouTube** y
+**Facebook & Instagram**), que ya miden **server-side**. Para esas plataformas el
+entregable de este repo es un procedimiento replicable, no un tag: un
+`gtag('event', 'conversion')` propio sería solo-navegador y duplicaría las
+conversiones de la app.
 
 **Regla del repo:** ningún archivo versionado contiene IDs, secretos ni tokens
 reales. Todos los valores específicos de cuenta viven como placeholders
