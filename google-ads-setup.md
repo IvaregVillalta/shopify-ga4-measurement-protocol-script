@@ -83,8 +83,9 @@ eventos de conversión**. La referencia usa 7:
 | Búsqueda enviada | Search |
 | Información para pagos enviada | Add payment info |
 
-> Los últimos tres apuntan, en la tienda de referencia, a acciones de conversión
-> llamadas `Google Shopping App <evento> (1)`. Ver [Antes de replicar](#antes-de-replicar).
+> En la tienda de referencia esos tres apuntan a acciones llamadas
+> `Google Shopping App <evento> (1)`. **El sufijo `(1)` es correcto ahí** — son las
+> que registran datos. Ver [Hallazgos verificados](#hallazgos-verificados).
 
 ### 6 — Activar conversiones mejoradas
 
@@ -117,26 +118,70 @@ remarketing con listas propias.
 
 ---
 
-## Antes de replicar
+## Hallazgos verificados
 
-Dos cosas de la tienda de referencia que **no** conviene copiar sin revisar. Ambas
-están sin verificar al día de hoy:
+Auditoría de la cuenta de Ads de referencia (`CL_Descorcha`), últimos 30 días
+al 2026-09-05. Resuelve las dos dudas que estaban abiertas.
 
-**Acciones de conversión duplicadas.** Tres eventos apuntan a acciones con sufijo
-`(1)` — `Google Shopping App View Item (1)`, `… Search (1)`, `… Add Payment Info (1)`.
-Ese sufijo es lo que crea Google Ads cuando ya existe una acción con el mismo
-nombre, así que probablemente haya pares duplicados en la cuenta. Revisalo en
-**Google Ads → Herramientas → Conversiones** antes de tomar este mapeo como canon,
-y mapeá a las acciones sin sufijo si las duplicadas resultan ser huérfanas.
+### Las acciones con sufijo `(1)` son las buenas
 
-**Simprosys Google Shopping Feed.** La tienda de referencia lo tiene instalado y
-activo como pixel. Simprosys puede inyectar su propio tag de conversión y
-remarketing de Google Ads, lo que duplicaría el conteo contra la etiqueta de la
-app. Si la tienda nueva también lo usa, revisá en su configuración que el
-conversion tracking propio esté **apagado**, y dejá la medición solo en manos de
-Google & YouTube.
+Contrario a lo que decía antes este runbook: **no hay que mapear a los nombres sin
+sufijo.** Los datos de la cuenta:
 
----
+| Acción | Estado | Conversiones |
+|---|---|---|
+| `Google Shopping App Add Payment Info` | Needs attention | **0** |
+| `Google Shopping App Add Payment Info (1)` | Active | **3.280** |
+| `Google Shopping App View Item (1)` | Needs attention | 31.044 |
+| `Google Shopping App Search (1)` | Needs attention | 7.021 |
+
+Solo Add Payment Info tiene par duplicado, y **la muerta es la que no lleva
+sufijo**. De View Item y Search no existe versión sin sufijo entre las activas.
+
+En una tienda nueva este problema no se reproduce: los nombres los crea la app al
+vincular, y el `(1)` aparece solo cuando ya existía una acción homónima. **No
+copies los nombres literales** — dejá que la app cree los suyos y mapeá a esos.
+
+### Simprosys no duplica el tag: descartado
+
+La cuenta tiene **una sola etiqueta de Google** (un `AW-` y su `GT-`), apuntando a
+la cuenta de Ads de la tienda. Simprosys no
+inyecta una segunda etiqueta de Ads. El riesgo de doble conteo por esa vía queda
+descartado.
+
+### Lo que sí conviene corregir en la referencia
+
+**Valor inflado en micro-conversiones.** Las acciones intermedias llevan valor
+monetario que no es facturación:
+
+| Acción | Conversiones | Valor |
+|---|---|---|
+| Purchase (Primary) | 1.423 | 201.253 |
+| Google Shopping App View Item (1) | 31.044 | 654.949 |
+| Google Shopping App Add Payment Info (1) | 3.280 | 218.456 |
+| **Total cuenta** | 141.037 | **1.081.292** |
+
+El valor total de la cuenta es ~5x la facturación real. No corrompe el bidding
+—todas son Secundarias y están fuera de los objetivos a nivel de cuenta, solo
+`Purchase` es Principal— pero sí inutiliza cualquier lectura de "valor de
+conversión" a nivel cuenta. En una tienda nueva, dejá las micro-conversiones **sin
+valor monetario**.
+
+**Calidad del tag: Urgent.** El diagnóstico del tag reporta 3 problemas:
+
+1. La configuración de seguridad del sitio está **bloqueando recursos del tag**
+   (CSP del tema)
+2. **Hay páginas sin taggear** — el tag no está en todo el sitio
+3. Dominios adicionales detectados que faltan en la configuración
+
+Los tres afectan la medición, y explican los `Needs attention` de la tabla de
+conversiones. **Resolvelos en la referencia antes de tomarla como modelo**, o al
+menos revisá el diagnóstico del tag en cada tienda nueva después de instalar
+(Herramientas → Administrador de datos → la etiqueta → Tag quality).
+
+**`Add to cart` y `Begin checkout` cuentan "One"** (una conversión por clic) en vez
+de "Every". Para embudo de ecommerce lo esperable es "Every". `Purchase` sí está en
+"Every", que es lo correcto.
 
 ## Relación con los otros archivos
 
