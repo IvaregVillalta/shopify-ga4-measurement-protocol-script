@@ -1,0 +1,29 @@
+{%- comment -%}
+  GA4 Identity Tag — identity only, no events.
+
+  Dónde va: theme.liquid, dentro de <head>.
+  Qué hace: inicializa gtag.js en un dataLayer aislado (gaIdentityLayer) para
+  que NO reciba el broadcast de eventos de Google Ads. Los eventos de
+  ecommerce los envía customer-events.js desde el Custom Pixel.
+
+  PLACEHOLDER A REEMPLAZAR POR TIENDA:
+    ga4_measurement_id → GA4 → Admin → Data streams → tu stream web (G-…)
+{%- endcomment -%}
+
+{%- assign ga4_measurement_id = 'G-XXXXXXXXXX' -%}
+
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_measurement_id }}&l=gaIdentityLayer"></script>
+<script>
+  // Globales: se mantienen para no romper apps que asumen que ya existen.
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };
+  // Canal aislado: SOLO identidad GA4. No escucha el dataLayer de Google Ads.
+  window.gaIdentityLayer = window.gaIdentityLayer || [];
+  function gaIdentity(){ window.gaIdentityLayer.push(arguments); }
+  gaIdentity('js', new Date());
+  gaIdentity('config', '{{ ga4_measurement_id }}', {
+    send_page_view: true,
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false
+  });
+</script>

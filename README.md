@@ -1,149 +1,220 @@
-# Shopify GA4 Measurement Protocol — Custom Pixel
+# Shopify Conversion Tracking — Plantillas
 
-A production-ready Shopify Custom Pixel that sends a complete GA4 ecommerce event set directly to Google Analytics 4 via the **Measurement Protocol**, bypassing browser ad blockers and ITP restrictions.
+Plantillas listas para producción que instrumentan una tienda Shopify con
+seguimiento de conversiones. Cada archivo es una plantilla con **placeholders**:
+se copia, se reemplazan los IDs de la tienda/cuenta y se instala.
 
-**Version:** 1.2.0 | **Environment:** Shopify Customer Events → Custom Pixel
+**Estado actual:** GA4 implementado. Google Ads y Meta CAPI en el roadmap
+(ver [Alcance](#alcance-y-roadmap)).
 
 ---
 
-## Why use this instead of gtag.js?
+## Archivos
 
-| | gtag.js / Google tag | This script |
+| Archivo | Dónde se instala | Qué hace |
 |---|---|---|
-| Works through ad blockers | No | Yes |
-| Works in Shopify checkout | No (third-party scripts blocked) | Yes |
-| Tracks purchase server-side | No | Yes (client-side MP) |
-| Requires GTM setup | Yes | No |
-| Installation complexity | High | Paste & go |
+| `head-tag.liquid` | `theme.liquid`, dentro de `<head>` | Inicializa gtag.js para **identidad** GA4 en un dataLayer aislado. No envía eventos de ecommerce. |
+| `customer-events.js` | Shopify → Settings → Customer events → Custom pixel | Envía **todos** los eventos (storefront + checkout + DOM) a GA4 vía `gtag('event', …)`. |
+
+Los dos son independientes: el pixel funciona sin el head tag, pero el head tag
+mejora la atribución de identidad en el storefront.
 
 ---
 
-## Prerequisites
+## Prerequisitos
 
-- A Shopify store on any plan (checkout pixel access requires Shopify Plus or the Customer Events feature)
-- A Google Analytics 4 property
-- A GA4 **Measurement Protocol API Secret** (takes ~2 minutes to create)
+- Una tienda Shopify con acceso a **Customer Events** (Custom Pixels)
+- Una propiedad de Google Analytics 4 con un stream web
+- El **Measurement ID** del stream (empieza con `G-`)
 
 ---
 
 ## Setup
 
-### Step 1 — Create a Measurement Protocol API Secret
+### Paso 1 — Instalar el head tag
 
-1. Open [Google Analytics](https://analytics.google.com) → **Admin**
-2. Under **Data collection and modification** → **Data streams** → select your web stream
-3. Scroll to **Measurement Protocol API secrets** → **Create**
-4. Give it a nickname (e.g. `Shopify Pixel`) and copy the secret value
+1. Shopify admin → **Online Store → Themes → Edit code**
+2. Abre `layout/theme.liquid`
+3. Pega el contenido de `head-tag.liquid` dentro de `<head>`
+4. Reemplaza el placeholder:
 
-### Step 2 — Configure the script
-
-Open `script.js` and update the three constants at the top:
-
-```js
-const GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';   // Your GA4 Measurement ID
-const GA4_API_SECRET     = 'your_secret_here'; // The secret you just created
-const DEBUG_MODE         = true;               // Set to false before going live
+```liquid
+{%- assign ga4_measurement_id = 'G-XXXXXXXXXX' -%}
 ```
 
-Your **Measurement ID** is found in GA4 → Admin → Data streams → your stream (it starts with `G-`).
+El Measurement ID está en **GA4 → Admin → Data streams → tu stream web**.
 
-### Step 3 — Add the pixel to Shopify
+> El tag usa un dataLayer aislado (`gaIdentityLayer`) a propósito: así no recibe
+> el broadcast de eventos de Google Ads y no duplica conversiones.
 
-1. In your Shopify admin, go to **Settings → Customer events**
-2. Click **Add custom pixel**
-3. Name it (e.g. `GA4 Measurement Protocol`)
-4. Paste the **entire contents** of `script.js` into the code editor
-5. Click **Save**, then **Connect**
+### Paso 2 — Configurar el Custom Pixel
 
-### Step 4 — Verify in GA4 DebugView
+Abre `customer-events.js` y actualiza las dos constantes del inicio:
 
-With `DEBUG_MODE = true`, all events appear in real time under **GA4 → Admin → DebugView**. Browse your store, add a product to cart, and confirm events are arriving before going live.
+```js
+const GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Tu GA4 Measurement ID
+const DEBUG_MODE         = false;          // true solo para validar en DebugView
+```
 
-### Step 5 — Go live
+Usa el **mismo** Measurement ID que en el head tag.
 
-Set `DEBUG_MODE = false` in the script, save, and reconnect the pixel in Shopify. DebugView events will stop; data will flow into standard GA4 reports within 24–48 hours.
+### Paso 3 — Instalar el pixel en Shopify
+
+1. Shopify admin → **Settings → Customer events**
+2. **Add custom pixel**
+3. Nómbralo (ej. `GA4 Tracking`)
+4. Pega el contenido **completo** de `customer-events.js`
+5. **Save** y luego **Connect**
+
+### Paso 4 — Validar en DebugView
+
+Pon `DEBUG_MODE = true`, guarda y reconecta el pixel. Los eventos aparecen en
+tiempo real en **GA4 → Admin → DebugView**. Navega la tienda, agrega al carrito
+y confirma que llega **un evento por acción, sin duplicados**.
+
+### Paso 5 — Producción
+
+Pon `DEBUG_MODE = false`, guarda y reconecta el pixel. Los datos aparecen en los
+informes estándar de GA4 en 24–48 horas.
 
 ---
 
-## Configuration Reference
+## Referencia de configuración
 
-| Constant | Default | Description |
+### `head-tag.liquid`
+
+| Variable | Default | Descripción |
 |---|---|---|
-| `GA4_MEASUREMENT_ID` | `'G-XXXXXXXXXX'` | Your GA4 property's Measurement ID |
-| `GA4_API_SECRET` | `'...'` | Measurement Protocol API secret |
-| `DEBUG_MODE` | `true` | Enables GA4 DebugView; **set to `false` in production** |
-| `SESSION_TIMEOUT_MS` | `1800000` (30 min) | Inactivity threshold for a new session |
+| `ga4_measurement_id` | `'G-XXXXXXXXXX'` | Measurement ID del stream GA4 |
+
+Flags fijados en el `config` (no son placeholders):
+
+| Flag | Valor | Motivo |
+|---|---|---|
+| `send_page_view` | `true` | Page view de identidad en el storefront |
+| `allow_google_signals` | `false` | Sin señales de Google para publicidad |
+| `allow_ad_personalization_signals` | `false` | Sin personalización de anuncios |
+
+### `customer-events.js`
+
+| Constante | Default | Descripción |
+|---|---|---|
+| `GA4_MEASUREMENT_ID` | `'G-XXXXXXXXXX'` | Measurement ID del stream GA4 |
+| `DEBUG_MODE` | `false` | Activa GA4 DebugView; **`false` en producción** |
+
+El pixel carga su propia instancia de gtag.js con `send_page_view: false` — el
+`page_view` se dispara manualmente desde la suscripción `page_viewed` para
+controlar el timing e incluir el contexto completo del evento de Shopify.
 
 ---
 
-## Events Tracked
+## Eventos enviados
 
-### Standard GA4 Ecommerce Events
+### Ecommerce estándar de GA4
 
-| Shopify Event | GA4 Event | Key Parameters |
+| Evento Shopify | Evento GA4 | Parámetros clave |
 |---|---|---|
 | `page_viewed` | `page_view` | `page_location`, `page_title`, `page_referrer`, `page_load_time` |
 | `product_viewed` | `view_item` | `currency`, `value`, `items`, `page_load_time` |
 | `collection_viewed` | `view_item_list` | `item_list_id`, `item_list_name`, `items`, `page_load_time` |
-| `search_submitted` | `search` | `search_term`, `page_load_time` |
+| `search_submitted` | `search` | `search_term` |
 | `product_added_to_cart` | `add_to_cart` | `currency`, `value`, `items` |
 | `product_removed_from_cart` | `remove_from_cart` | `currency`, `value`, `items` |
 | `cart_viewed` | `view_cart` | `currency`, `value`, `items`, `page_load_time` |
-| `checkout_started` | `begin_checkout` | `currency`, `value`, `coupon`, `items`, `page_load_time` |
+| `checkout_started` | `begin_checkout` | `currency`, `value`, `coupon`, `items` |
 | `checkout_shipping_info_submitted` | `add_shipping_info` | `shipping_tier`, `coupon`, `items` |
 | `payment_info_submitted` | `add_payment_info` | `currency`, `value`, `coupon`, `items` |
-| `checkout_completed` | `purchase` | `transaction_id`, `value`, `tax`, `shipping`, `discount`, `coupon`, `items`, `page_load_time` |
+| `checkout_completed` | `purchase` | `transaction_id`, `value`, `tax`, `shipping`, `discount`, `coupon`, `items` |
 
-### Custom GA4 Events
+### Eventos personalizados
 
-| Shopify Event | GA4 Event | Notes |
+| Evento Shopify | Evento GA4 | Notas |
 |---|---|---|
-| `checkout_contact_info_submitted` | `checkout_contact_info` | Checkout funnel step |
-| `checkout_address_info_submitted` | `checkout_address_info` | Checkout funnel step |
-| `alert_displayed` | `alert_displayed` | Checkout friction detection |
-| `ui_extension_errored` | `ui_extension_errored` | Third-party app error monitoring |
-| `clicked` | `dom_clicked` | Click coordinates + element metadata |
-| `form_submitted` | `dom_form_submitted` | Form structure only — no field values |
-| `input_focused` | `dom_input_focused` | Field-level attention tracking |
-| `input_changed` | `dom_input_changed` | Field interaction tracking |
-| `input_blurred` | `dom_input_blurred` | Field abandonment / dwell time |
+| `checkout_contact_info_submitted` | `checkout_contact_info` | Paso del funnel de checkout |
+| `checkout_address_info_submitted` | `checkout_address_info` | Paso del funnel de checkout |
+| `alert_displayed` | `alert_displayed` | Detección de fricción en checkout |
+| `ui_extension_errored` | `ui_extension_errored` | Monitoreo de errores de apps de terceros |
+| `clicked` | `dom_clicked` | Coordenadas del clic + metadata del elemento |
+| `form_submitted` | `dom_form_submitted` | Solo estructura del form — nunca valores |
+| `input_focused` | `dom_input_focused` | Atención a nivel de campo |
+| `input_changed` | `dom_input_changed` | Interacción con el campo |
+| `input_blurred` | `dom_input_blurred` | Abandono / dwell time del campo |
 
-> **Note on DOM events:** `clicked`, `input_focused`, `input_changed`, and `input_blurred` can fire at high volume on busy stores. If you approach GA4's event quota limits, consider removing these events from the script.
+> **Sobre los eventos DOM:** `clicked`, `input_focused`, `input_changed` e
+> `input_blurred` pueden dispararse en alto volumen en tiendas con mucho
+> tráfico. Si te acercas a los límites de cuota de GA4, elimina esas
+> suscripciones del pixel.
 
 ---
 
-## How It Works
+## Cómo funciona
 
-- **Client ID** — Generated in the format `timestamp.random` and persisted in `localStorage` so the same user is recognized across sessions, matching GA4's native client ID format.
-- **Session ID** — Stored in `sessionStorage` with a 30-minute inactivity timeout, replicating GA4's session logic.
-- **Page Load Time** — Measured using `performance.now()` between pixel initialization and each page navigation event. The elapsed time (in seconds, rounded to 2 decimals) is captured as `page_load_time` and included in the first event after each navigation. Subsequent events on the same page omit this parameter. For the first page load, this includes pixel bootstrap time; for SPA navigations, it reflects perceived transition time.
-- **Deduplication** — Each event gets a deterministic ID (djb2 hash of name + timestamp + product ID). Duplicate IDs within the same page session are silently dropped.
-- **PII safety** — Form `input_changed` and `form_submitted` events send field names and types only — never field values — to avoid capturing emails, passwords, or payment data.
-- **Navigation safety** — All `fetch` calls use `keepalive: true` so events are not lost when the user navigates away before the request completes.
+- **Identidad (client ID / session ID)** — Los gestiona gtag.js de forma nativa;
+  el pixel no los calcula ni los persiste manualmente.
+- **Page load time** — Se mide con `performance.now()` entre la inicialización
+  del pixel y cada navegación. El tiempo transcurrido (segundos, 2 decimales) se
+  envía como `page_load_time` en el primer evento tras cada navegación; los
+  eventos posteriores en la misma página lo omiten. En la primera carga incluye
+  el bootstrap del pixel; en navegaciones SPA refleja el tiempo de transición
+  percibido.
+- **Deduplicación** — Cada evento recibe un `event_id` determinista (hash djb2 de
+  nombre + timestamp + discriminador). Los IDs repetidos dentro de la misma
+  sesión de página se descartan en memoria, y el `event_id` se pasa a gtag como
+  hint para la deduplicación del lado del servidor.
+- **Seguridad de PII** — `input_changed` y `form_submitted` envían solo nombres y
+  tipos de campo, nunca valores, para no capturar emails, contraseñas ni datos
+  de pago.
+- **Aislamiento del head tag** — `gaIdentityLayer` mantiene la identidad GA4 fuera
+  del dataLayer que usa Google Ads, evitando doble conteo de conversiones.
+- **Fallo silencioso** — La carga de gtag.js está envuelta en `try/catch`: el
+  pixel nunca debe bloquear el storefront.
 
 ---
 
 ## Troubleshooting
 
-**Events not appearing in DebugView**
-- Confirm `DEBUG_MODE = true` in the script
-- Check that the pixel status shows **Connected** in Shopify → Settings → Customer events
-- Open your browser's Network tab and filter for `mp/collect` — you should see POST requests on page load
+**No aparecen eventos en DebugView**
+- Confirma `DEBUG_MODE = true` y que reconectaste el pixel después de guardar
+- Verifica que el estado del pixel sea **Connected** en Shopify → Settings → Customer events
+- Abre la pestaña Network y filtra por `/g/collect` — deberías ver requests al cargar la página
 
-**`purchase` events are duplicated**
-- This script uses `checkout.order.id` as `transaction_id`. Ensure no other GA4 integration (e.g. a native Shopify GA4 integration) is also sending `purchase` events to the same property.
+**Eventos `purchase` duplicados**
+- El pixel usa `checkout.order.id` como `transaction_id`. Asegúrate de que ninguna
+  otra integración GA4 (ej. la integración nativa de Shopify, o Google Ads con
+  conversion linker) esté enviando `purchase` a la misma propiedad.
 
-**Events fire but no data in GA4 reports**
-- Standard reports have a 24–48 hour delay. Use DebugView for real-time validation.
-- Confirm your Measurement ID matches the stream where you created the API secret.
+**Eventos duplicados en general**
+- Revisa que el head tag y el pixel no estén configurados con `send_page_view: true`
+  ambos apuntando al mismo evento. El pixel usa `send_page_view: false` a propósito.
+
+**Los eventos se disparan pero no hay datos en los informes**
+- Los informes estándar tienen 24–48 h de retraso. Usa DebugView para validar en tiempo real.
+- Confirma que el Measurement ID del head tag y el del pixel sean el mismo.
 
 ---
 
-## Production Checklist
+## Checklist de producción
 
-- [ ] `GA4_MEASUREMENT_ID` updated with your `G-XXXXXXXXXX` value
-- [ ] `GA4_API_SECRET` updated with your Measurement Protocol secret
-- [ ] `DEBUG_MODE` set to `false`
-- [ ] Events validated in GA4 DebugView before going live
-- [ ] No other GA4 integration sending duplicate `purchase` events to the same property
-- [ ] Pixel status shows **Connected** in Shopify
+- [ ] `ga4_measurement_id` en `head-tag.liquid` reemplazado
+- [ ] `GA4_MEASUREMENT_ID` en `customer-events.js` reemplazado con el **mismo** valor
+- [ ] `DEBUG_MODE` en `false`
+- [ ] Eventos validados en GA4 DebugView, uno por acción, sin duplicados
+- [ ] Ninguna otra integración GA4 enviando `purchase` duplicados
+- [ ] Pixel en estado **Connected** en Shopify
+- [ ] Ningún ID real commiteado — los archivos del repo quedan con placeholders
+
+---
+
+## Alcance y roadmap
+
+Este repositorio es la base de plantillas de conversión para tiendas Shopify.
+
+| Plataforma | Estado | Archivos |
+|---|---|---|
+| Google Analytics 4 | Implementado | `head-tag.liquid`, `customer-events.js` |
+| Google Ads | Pendiente | — |
+| Meta CAPI | Pendiente | — |
+
+**Regla del repo:** ningún archivo versionado contiene IDs, secretos ni tokens
+reales. Todos los valores específicos de cuenta viven como placeholders
+(`G-XXXXXXXXXX`, `AW-XXXXXXXXX`, etc.) y se reemplazan al instalar en cada tienda.
