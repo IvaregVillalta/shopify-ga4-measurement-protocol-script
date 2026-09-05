@@ -83,9 +83,9 @@ eventos de conversión**. La referencia usa 7:
 | Búsqueda enviada | Search |
 | Información para pagos enviada | Add payment info |
 
-> En la tienda de referencia esos tres apuntan a acciones llamadas
-> `Google Shopping App <evento> (1)`. **El sufijo `(1)` es correcto ahí** — son las
-> que registran datos. Ver [Hallazgos verificados](#hallazgos-verificados).
+> Los nombres exactos varían por cuenta: la app puede crearlos con sufijo `(1)`.
+> Mapeá a los que la app creó en esa cuenta, no a una lista fija — ver
+> [Reglas del método](#reglas-del-método).
 
 ### 6 — Activar conversiones mejoradas
 
@@ -115,73 +115,75 @@ remarketing con listas propias.
    actividad "Reciente" dentro de las 24 h de la primera compra.
 4. Con la extensión **Google Tag Assistant** sobre el storefront, confirmá que el
    `AW-` dispare **una sola vez** por conversión.
+5. **Herramientas → Administrador de datos → la etiqueta → Tag quality.** Si no
+   está en verde, la medición está degradada — ver [Reglas del método](#reglas-del-método).
 
 ---
 
-## Hallazgos verificados
+## Reglas del método
 
-Auditoría de la cuenta de Ads de referencia (`CL_Descorcha`), últimos 30 días
-al 2026-09-05. Resuelve las dos dudas que estaban abiertas.
+Lecciones de las tiendas ya configuradas, en forma de regla aplicable. Cada
+tienda nueva puede agregar o corregir una — ver [Registro](#registro-de-mejoras).
 
-### Las acciones con sufijo `(1)` son las buenas
+### No copies los nombres de las acciones de conversión
 
-Contrario a lo que decía antes este runbook: **no hay que mapear a los nombres sin
-sufijo.** Los datos de la cuenta:
+La app crea las acciones al vincular la cuenta. Si en la cuenta ya existía una con
+el mismo nombre, Google le agrega un sufijo `(1)`, así que **los nombres varían
+entre cuentas**. Mapeá siempre a las acciones que la app creó en *esa* cuenta, no
+a una lista fija.
 
-| Acción | Estado | Conversiones |
+Al mapear, verificá cuál del par registra datos: abrí **Herramientas →
+Conversiones** y mirá la columna de conversiones de los últimos 30 días. La que
+está en cero es la huérfana, sin importar cómo se llame.
+
+### Las micro-conversiones van sin valor monetario
+
+Solo `Purchase` debe llevar valor. Si `View item`, `Add payment info` o `Search`
+llevan valor, el "valor de conversión" a nivel cuenta deja de significar algo
+—puede multiplicar por varias veces la facturación real— y cualquier informe que
+lo use queda inservible.
+
+Mantenelas además como **Secundarias** y fuera de los objetivos a nivel de cuenta,
+para que no entren al Smart Bidding. Solo `Purchase` va como **Principal**.
+
+### Conteo: `Every` para compra, `One` para el resto
+
+`Purchase` cuenta **cada** conversión (un cliente que compra dos veces son dos
+ventas). Los pasos del embudo cuentan **una** por clic.
+
+### Revisá la calidad del tag después de instalar
+
+**Herramientas → Administrador de datos → la etiqueta → Tag quality.** Si aparece
+en `Urgent` o `Needs attention`, la medición está degradada aunque las conversiones
+entren. Los tres problemas que aparecen seguido:
+
+- **El CSP del tema bloquea recursos del tag.** Es el único que degrada la medición
+  de verdad, y **se propaga entre tiendas que comparten tema**. El diagnóstico de
+  Google no dice qué directivas faltan: hay que comparar el CSP del tema contra lo
+  que gtag.js necesita.
+- **Páginas sin taggear.** Revisá *cuáles* antes de preocuparte (ver abajo).
+- **Dominios adicionales detectados.** Otro dominio o locale carga el mismo tag.
+  Decisión de negocio: agregarlo a la configuración o separar el tag por mercado.
+
+### "Páginas sin taggear" es casi siempre ruido
+
+Las URLs de `/checkouts/` van a figurar sin taggear **siempre**: Shopify bloquea
+scripts de terceros en el checkout, y por eso justamente la app mide server-side.
+Lo mismo con archivos `.js`, endpoints como `/cart/clear` y redirecciones.
+
+Filtrá esas antes de sacar conclusiones. Lo que sí merece atención son páginas
+reales de catálogo o locales de otros mercados (`/br/`, `/mx/`).
+
+---
+
+## Registro de mejoras
+
+Una línea por tienda configurada, con lo que se aprendió. El objetivo es que el
+runbook mejore con cada corrida.
+
+| Fecha | Tienda | Qué se aprendió |
 |---|---|---|
-| `Google Shopping App Add Payment Info` | Needs attention | **0** |
-| `Google Shopping App Add Payment Info (1)` | Active | **3.280** |
-| `Google Shopping App View Item (1)` | Needs attention | 31.044 |
-| `Google Shopping App Search (1)` | Needs attention | 7.021 |
-
-Solo Add Payment Info tiene par duplicado, y **la muerta es la que no lleva
-sufijo**. De View Item y Search no existe versión sin sufijo entre las activas.
-
-En una tienda nueva este problema no se reproduce: los nombres los crea la app al
-vincular, y el `(1)` aparece solo cuando ya existía una acción homónima. **No
-copies los nombres literales** — dejá que la app cree los suyos y mapeá a esos.
-
-### Simprosys no duplica el tag: descartado
-
-La cuenta tiene **una sola etiqueta de Google** (un `AW-` y su `GT-`), apuntando a
-la cuenta de Ads de la tienda. Simprosys no
-inyecta una segunda etiqueta de Ads. El riesgo de doble conteo por esa vía queda
-descartado.
-
-### Lo que sí conviene corregir en la referencia
-
-**Valor inflado en micro-conversiones.** Las acciones intermedias llevan valor
-monetario que no es facturación:
-
-| Acción | Conversiones | Valor |
-|---|---|---|
-| Purchase (Primary) | 1.423 | 201.253 |
-| Google Shopping App View Item (1) | 31.044 | 654.949 |
-| Google Shopping App Add Payment Info (1) | 3.280 | 218.456 |
-| **Total cuenta** | 141.037 | **1.081.292** |
-
-El valor total de la cuenta es ~5x la facturación real. No corrompe el bidding
-—todas son Secundarias y están fuera de los objetivos a nivel de cuenta, solo
-`Purchase` es Principal— pero sí inutiliza cualquier lectura de "valor de
-conversión" a nivel cuenta. En una tienda nueva, dejá las micro-conversiones **sin
-valor monetario**.
-
-**Calidad del tag: Urgent.** El diagnóstico del tag reporta 3 problemas:
-
-1. La configuración de seguridad del sitio está **bloqueando recursos del tag**
-   (CSP del tema)
-2. **Hay páginas sin taggear** — el tag no está en todo el sitio
-3. Dominios adicionales detectados que faltan en la configuración
-
-Los tres afectan la medición, y explican los `Needs attention` de la tabla de
-conversiones. **Resolvelos en la referencia antes de tomarla como modelo**, o al
-menos revisá el diagnóstico del tag en cada tienda nueva después de instalar
-(Herramientas → Administrador de datos → la etiqueta → Tag quality).
-
-**`Add to cart` y `Begin checkout` cuentan "One"** (una conversión por clic) en vez
-de "Every". Para embudo de ecommerce lo esperable es "Every". `Purchase` sí está en
-"Every", que es lo correcto.
+| 2026-09-05 | Descorcha (referencia) | Método inicial. Los nombres de las acciones varían por cuenta; las micro-conversiones traían valor monetario; el CSP del tema degradaba el tag. |
 
 ## Relación con los otros archivos
 
