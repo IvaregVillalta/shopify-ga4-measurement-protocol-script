@@ -13,9 +13,9 @@ se copia, se reemplazan los IDs de la tienda/cuenta y se instala.
 
 | Archivo | Dónde se instala | Qué hace |
 |---|---|---|
-| `head-tag.liquid` | `theme.liquid`, dentro de `<head>` | Inicializa gtag.js para **identidad** GA4 en un dataLayer aislado. No envía eventos de ecommerce. |
-| `customer-events.js` | Shopify → Settings → Customer events → Custom pixel | Envía **todos** los eventos (storefront + checkout + DOM) a GA4 vía `gtag('event', …)`. |
-| `google-ads-setup.md` | — (procedimiento) | Runbook para replicar la configuración de Google Ads vía el canal Google & YouTube. |
+| `ga4-head-tag.liquid` | `theme.liquid`, dentro de `<head>` | Inicializa gtag.js para **identidad** GA4 en un dataLayer aislado. No envía eventos de ecommerce. |
+| `ga4-custom-pixel.js` | Shopify → Settings → Customer events → Custom pixel | Envía **todos** los eventos (storefront + checkout + DOM) a GA4 vía `gtag('event', …)`. |
+| `google-ads-runbook.md` | — (procedimiento) | Runbook para replicar la configuración de Google Ads vía el canal Google & YouTube. |
 
 Los dos son independientes: el pixel funciona sin el head tag, pero el head tag
 mejora la atribución de identidad en el storefront.
@@ -36,7 +36,7 @@ mejora la atribución de identidad en el storefront.
 
 1. Shopify admin → **Online Store → Themes → Edit code**
 2. Abre `layout/theme.liquid`
-3. Pega el contenido de `head-tag.liquid` dentro de `<head>`
+3. Pega el contenido de `ga4-head-tag.liquid` dentro de `<head>`
 4. Reemplaza el placeholder:
 
 ```liquid
@@ -50,7 +50,7 @@ El Measurement ID está en **GA4 → Admin → Data streams → tu stream web**.
 
 ### Paso 2 — Configurar el Custom Pixel
 
-Abre `customer-events.js` y actualiza las dos constantes del inicio:
+Abre `ga4-custom-pixel.js` y actualiza las dos constantes del inicio:
 
 ```js
 const GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Tu GA4 Measurement ID
@@ -64,7 +64,7 @@ Usa el **mismo** Measurement ID que en el head tag.
 1. Shopify admin → **Settings → Customer events**
 2. **Add custom pixel**
 3. Nómbralo (ej. `GA4 Tracking`)
-4. Pega el contenido **completo** de `customer-events.js`
+4. Pega el contenido **completo** de `ga4-custom-pixel.js`
 5. **Save** y luego **Connect**
 
 ### Paso 4 — Validar en DebugView
@@ -82,7 +82,7 @@ informes estándar de GA4 en 24–48 horas.
 
 ## Referencia de configuración
 
-### `head-tag.liquid`
+### `ga4-head-tag.liquid`
 
 | Variable | Default | Descripción |
 |---|---|---|
@@ -96,7 +96,7 @@ Flags fijados en el `config` (no son placeholders):
 | `allow_google_signals` | `false` | Sin señales de Google para publicidad |
 | `allow_ad_personalization_signals` | `false` | Sin personalización de anuncios |
 
-### `customer-events.js`
+### `ga4-custom-pixel.js`
 
 | Constante | Default | Descripción |
 |---|---|---|
@@ -196,8 +196,8 @@ controlar el timing e incluir el contexto completo del evento de Shopify.
 
 ## Checklist de producción
 
-- [ ] `ga4_measurement_id` en `head-tag.liquid` reemplazado
-- [ ] `GA4_MEASUREMENT_ID` en `customer-events.js` reemplazado con el **mismo** valor
+- [ ] `ga4_measurement_id` en `ga4-head-tag.liquid` reemplazado
+- [ ] `GA4_MEASUREMENT_ID` en `ga4-custom-pixel.js` reemplazado con el **mismo** valor
 - [ ] `DEBUG_MODE` en `false`
 - [ ] Eventos validados en GA4 DebugView, uno por acción, sin duplicados
 - [ ] Ninguna otra integración GA4 enviando `purchase` duplicados
@@ -212,8 +212,8 @@ Este repositorio es la base de plantillas de conversión para tiendas Shopify.
 
 | Plataforma | Estado | Archivos |
 |---|---|---|
-| Google Analytics 4 | Implementado | `head-tag.liquid`, `customer-events.js` |
-| Google Ads | Documentado — sin código | `google-ads-setup.md` |
+| Google Analytics 4 | Implementado | `ga4-head-tag.liquid`, `ga4-custom-pixel.js` |
+| Google Ads | Documentado — sin código | `google-ads-runbook.md` |
 | Meta CAPI | Pendiente | — |
 
 Google Ads y Meta se gestionan desde apps de Shopify (**Google & YouTube** y

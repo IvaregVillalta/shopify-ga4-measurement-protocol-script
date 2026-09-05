@@ -57,7 +57,7 @@ etiquetas `AW-`, emails: todos van como placeholders (`G-XXXXXXXXXX`,
 
 Esto ya falló una vez: el `G-` real de Descorcha quedó hardcodeado en el head tag
 y encima no coincidía con el del `config`, así que el tag apuntaba a una propiedad
-que la librería nunca inicializaba. Por eso `head-tag.liquid` define el ID una sola
+que la librería nunca inicializaba. Por eso `ga4-head-tag.liquid` define el ID una sola
 vez con un `assign` de Liquid.
 
 ## Google Ads y Meta son configuración, no código
@@ -66,14 +66,16 @@ Las conversiones de Google Ads las gestiona el canal **Google & YouTube**, y las
 Meta la app **Facebook & Instagram**. Ambas miden **server-side**. No escribas un
 `gtag('event', 'conversion')` ni un pixel de Meta a mano: sería solo-navegador y
 duplicaría lo que la app ya manda. Para esas plataformas el entregable es un
-runbook (`google-ads-setup.md`), no un archivo para pegar.
+runbook (`google-ads-runbook.md`), no un archivo para pegar.
 
 GA4 sí es código, porque el Custom Pixel es la única forma de llegar al checkout:
-`customer-events.js` (Custom Pixel) y `head-tag.liquid` (theme.liquid).
+`ga4-custom-pixel.js` (Custom Pixel) y `ga4-head-tag.liquid` (theme.liquid).
 
-## Antes de replicar a una tienda nueva
+## El método se corrige con cada tienda
 
-`google-ads-setup.md` tiene una sección **"Antes de replicar"** con dos cosas de
-Descorcha sin verificar — acciones de conversión con sufijo `(1)` y Simprosys
-posiblemente inyectando su propio tag de Ads. Revisalas antes de propagarlas: si
-son un error de la referencia, replicar lo multiplica.
+`google-ads-runbook.md` tiene una sección **"Reglas del método"** con lo que sí
+transfiere entre tiendas, y un **"Registro de mejoras"** al final.
+
+Después de configurar una tienda, agregá una fila al registro con lo que se
+aprendió, y si algo contradice una regla, corregí la regla. Lo específico de una
+tienda no va al runbook — solo lo que se repetiría en la siguiente.

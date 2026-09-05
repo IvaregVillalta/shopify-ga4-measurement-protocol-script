@@ -192,8 +192,8 @@ Google Ads y GA4 son independientes y no comparten etiqueta:
 | | Quién mide | Archivo |
 |---|---|---|
 | Google Ads | App Google & YouTube (`AW-…`) | — (config, no código) |
-| GA4 | Custom pixel + head tag (`G-…`) | `customer-events.js`, `head-tag.liquid` |
+| GA4 | Custom pixel + head tag (`G-…`) | `ga4-custom-pixel.js`, `ga4-head-tag.liquid` |
 
-`head-tag.liquid` aísla GA4 en `gaIdentityLayer` justamente para que la identidad
+`ga4-head-tag.liquid` aísla GA4 en `gaIdentityLayer` justamente para que la identidad
 de GA4 no entre al `dataLayer` que usa Google Ads. Instalar los dos no genera
 doble conteo.
