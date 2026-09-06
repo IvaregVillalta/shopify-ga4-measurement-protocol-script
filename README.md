@@ -15,7 +15,8 @@ se copia, se reemplazan los IDs de la tienda/cuenta y se instala.
 |---|---|---|
 | `ga4-head-tag.liquid` | `theme.liquid`, dentro de `<head>` | Inicializa gtag.js para **identidad** GA4 en un dataLayer aislado. No envía eventos de ecommerce. |
 | `ga4-custom-pixel.js` | Shopify → Settings → Customer events → Custom pixel | Envía **todos** los eventos (storefront + checkout + DOM) a GA4 vía `gtag('event', …)`. |
-| `google-ads-runbook.md` | — (procedimiento) | Runbook para replicar la configuración de Google Ads vía el canal Google & YouTube. |
+| `google-ads-runbook.md` | — (procedimiento) | Runbook de Google Ads: camino A (canal Google & YouTube) y camino B (Custom Pixel). |
+| `google-ads-custom-pixel.js` | Shopify → Settings → Customer events → Custom pixel | Conversiones de Google Ads **solo cuando el canal no es viable**. Ver el runbook antes de usarlo. |
 
 Los dos son independientes: el pixel funciona sin el head tag, pero el head tag
 mejora la atribución de identidad en el storefront.
@@ -213,14 +214,19 @@ Este repositorio es la base de plantillas de conversión para tiendas Shopify.
 | Plataforma | Estado | Archivos |
 |---|---|---|
 | Google Analytics 4 | Implementado | `ga4-head-tag.liquid`, `ga4-custom-pixel.js` |
-| Google Ads | Documentado — sin código | `google-ads-runbook.md` |
+| Google Ads | Runbook + pixel de contingencia | `google-ads-runbook.md`, `google-ads-custom-pixel.js` |
 | Meta CAPI | Pendiente | — |
 
-Google Ads y Meta se gestionan desde apps de Shopify (**Google & YouTube** y
-**Facebook & Instagram**), que ya miden **server-side**. Para esas plataformas el
-entregable de este repo es un procedimiento replicable, no un tag: un
-`gtag('event', 'conversion')` propio sería solo-navegador y duplicaría las
-conversiones de la app.
+Google Ads y Meta se gestionan normalmente desde apps de Shopify (**Google &
+YouTube** y **Facebook & Instagram**), que miden **server-side**. Mientras la app
+funcione, el entregable es un procedimiento, no un tag: un `gtag('event',
+'conversion')` propio sería solo-navegador y duplicaría las conversiones de la app.
+
+**La excepción:** cuando la app no está disponible —la cuenta pierde el acceso, el
+OAuth no se puede completar— no queda nada midiendo. Ahí sí corresponde un Custom
+Pixel (`google-ads-custom-pixel.js`), porque es la única forma de llegar al
+checkout, donde Shopify no carga scripts de terceros. Se mide solo del lado del
+navegador, con la pérdida que eso implica. **Nunca los dos a la vez.**
 
 **Regla del repo:** ningún archivo versionado contiene IDs, secretos ni tokens
 reales. Todos los valores específicos de cuenta viven como placeholders

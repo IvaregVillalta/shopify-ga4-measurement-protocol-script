@@ -60,13 +60,21 @@ y encima no coincidía con el del `config`, así que el tag apuntaba a una propi
 que la librería nunca inicializaba. Por eso `ga4-head-tag.liquid` define el ID una sola
 vez con un `assign` de Liquid.
 
-## Google Ads y Meta son configuración, no código
+## Google Ads y Meta son configuración, no código — con una excepción
 
 Las conversiones de Google Ads las gestiona el canal **Google & YouTube**, y las de
-Meta la app **Facebook & Instagram**. Ambas miden **server-side**. No escribas un
-`gtag('event', 'conversion')` ni un pixel de Meta a mano: sería solo-navegador y
-duplicaría lo que la app ya manda. Para esas plataformas el entregable es un
+Meta la app **Facebook & Instagram**. Ambas miden **server-side**. Mientras la app
+funcione, no escribas un `gtag('event', 'conversion')` ni un pixel de Meta a mano:
+sería solo-navegador y duplicaría lo que la app ya manda. El entregable es un
 runbook (`google-ads-runbook.md`), no un archivo para pegar.
+
+**La excepción:** cuando la app no es usable —la cuenta pierde el acceso, el OAuth
+no se completa, la app carga en blanco— no queda nada midiendo, y un tag en el tema
+no sirve porque no llega al checkout. Ahí corresponde `google-ads-custom-pixel.js`
+(el **camino B** del runbook). Los dos caminos son excluyentes: nunca los dos a la
+vez. Antes de decidir, mirá **Configuración → Eventos del cliente**: si el pixel de
+la app dice **Servidor**, es camino A; si dice solo **Web** o la app no carga,
+evaluá el B.
 
 GA4 sí es código, porque el Custom Pixel es la única forma de llegar al checkout:
 `ga4-custom-pixel.js` (Custom Pixel) y `ga4-head-tag.liquid` (theme.liquid).
